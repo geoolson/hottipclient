@@ -14,6 +14,7 @@ const floatStyle = {
     zIndex: 1500
 }
 
+var geoposition = {};
 const MapView = props => {
   const [position, setPosition] = useState([45, 45]);
   const [canPlacePin, setCanPlacePin] = useState(false);
@@ -33,6 +34,7 @@ const MapView = props => {
       id="map"
       onClick={e => {
         if (canPlacePin) {
+          geoposition = e.latlng;
           setModalShow(true);
           setCanPlacePin(!canPlacePin);
         }
@@ -44,6 +46,7 @@ const MapView = props => {
       />
       <Menu
         show={modalShow}
+        geoposition={geoposition}
         onHide={() => setModalShow(false)}
       />
       <Marker position={position}>
