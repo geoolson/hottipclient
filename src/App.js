@@ -7,7 +7,10 @@ import {
   Circle
 } from 'react-leaflet';
 import Menu from './Menu';
-//import { popup, Circle } from 'leaflet';
+
+import {
+  Dropdown
+} from 'react-bootstrap';
 
 
 const floatStyle = {
@@ -34,6 +37,7 @@ const MapView = props => {
         <Popup>Your current location</Popup>
       </Marker>
   )
+  const [selection, setSelection] = useState("Amount");
 
   useEffect(() => {
     const [latitude, longitude] = position;
@@ -74,6 +78,14 @@ const MapView = props => {
           else
             return acc;
         }, 0);
+        const maxAvgTip = Object.keys(data).reduce((acc, key) => {
+          const tip = data[key];
+          const meanTip = tip.tip / (tip.tip + tip.subtotal) * 100;
+          if(meanTip > acc)
+            return meanTip;
+          else
+            return acc;
+        }, 0);
         setMarkers(
           Object.keys(data).map(key => {
             const tip = data[key];
@@ -97,7 +109,13 @@ const MapView = props => {
                 </Marker>
                 <Circle
                   center={tipPos}
-                  radius={(tip.tip / tip.count) * (340 / maxMeanTip) + 50}
+                  radius={(() =>{
+                    const tipPercent = tip.tip / (tip.tip + tip.subtotal) * 100;
+                    if(selection == "Amount")
+                      return (tip.tip / tip.count) * (340 / maxMeanTip) + 50;
+                    else
+                      return tipPercent * (340 / maxAvgTip) + 50;
+                  })()}
                 >
                 </Circle>
               </>
@@ -151,6 +169,31 @@ const MapView = props => {
         </div>
       </button>
       <circle center={position} radius={200} ></circle>
+      <Dropdown className="mb-2 mt-2 mr-2 float-right"
+        style={{zIndex: 2000}}
+      >
+        <Dropdown.Toggle
+          className="dark"
+          variant="success"
+          id="dropdown-basic"
+        >
+        {selection}
+        </Dropdown.Toggle>
+        <Dropdown.Menu
+          style={{ zIndex: 2000 }}
+        >
+          <Dropdown.Item 
+            onClick={() => setSelection("Percent")}
+          >
+            Percent
+          </Dropdown.Item>
+          <Dropdown.Item
+            onClick={() => setSelection("Amount")}
+          >
+            Amount
+          </Dropdown.Item>
+        </Dropdown.Menu>
+      </Dropdown>
     </Map>
   )
 }
