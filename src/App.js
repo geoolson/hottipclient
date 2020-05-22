@@ -1,14 +1,20 @@
 import React, { useState, useEffect } from 'react';
-import { Map, Marker, Popup, TileLayer } from 'react-leaflet';
+import { 
+  Map,
+  Marker,
+  Popup,
+  TileLayer,
+  Circle
+} from 'react-leaflet';
 import Menu from './Menu';
-import { popup } from 'leaflet';
+//import { popup, Circle } from 'leaflet';
 
 
 const floatStyle = {
     position: "fixed",
     width: "60px",
     height: "60px",
-    top: "10px",
+    bottom: "10px",
     right: "10px",
     borderRadius: "10px",
     textAlign: "center",
@@ -34,16 +40,67 @@ const MapView = props => {
     fetch(`${url}api/${latitude}/${longitude}`)
       .then(resp => resp.json())
       .then(data => {
+        data = data.map(tip =>{
+          tip.lat = Math.floor(tip.lat * 100)/100.0;
+          tip.lng = Math.floor(tip.lng * 100)/100.0;
+          return tip;
+        });
+        const aggTips = {};
+        data.forEach(tip => {
+          const key = `${tip.lat}${tip.lng}`;
+          console.log(tip);
+          if(key in aggTips){
+            aggTips[key].count = aggTips[key].count + 1;
+            aggTips[key].tip = aggTips[key].tip + tip.tip;
+            aggTips[key].subtotal = aggTips[key].subtotal + tip.sub_total;
+          }
+          else{
+            aggTips[key] = {
+              count: 1,
+              tip: tip.tip,
+              subtotal: tip.sub_total,
+              lat: tip.lat,
+              lng: tip.lng
+            }
+          }
+        });
+        data = aggTips;
+        console.log(aggTips);
+        const maxMeanTip = Object.keys(data).reduce((acc, key) => {
+          const tip = data[key];
+          const meanTip = tip.tip / tip.count;
+          if(meanTip > acc)
+            return meanTip;
+          else
+            return acc;
+        }, 0);
         setMarkers(
-          data.map(tip => {
+          Object.keys(data).map(key => {
+            const tip = data[key];
             const tipPos = [tip.lat, tip.lng];
-            console.log(tip);
+            console.log(maxMeanTip);
             return (
-              <Marker position={tipPos}>
-                <Popup>
-                  {tip.tip}
-                </Popup>
-              </Marker>
+              <>
+                <Marker position={tipPos}>
+                  <Popup>
+                    <h3>
+                      Tips
+                  </h3>
+                    <b>Average Amount: </b>${tip.tip / tip.count}
+                    <br/>
+                    <b>Average Percent : </b>{(() => {
+                      const tipPercent = tip.tip / (tip.tip + tip.subtotal) * 100;
+                      return tipPercent.toFixed(2)
+                    })()
+                    }%
+                  </Popup>
+                </Marker>
+                <Circle
+                  center={tipPos}
+                  radius={(tip.tip / tip.count) * (340 / maxMeanTip) + 50}
+                >
+                </Circle>
+              </>
             )
           })
         );
